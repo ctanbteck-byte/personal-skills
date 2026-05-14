@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Personal Skills File Builder</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1a1410;
+    --paper: #f5f0e8;
+    --cream: #ede8dc;
+    --amber: #c8860a;
+    --amber-light: #f0b429;
+    --rust: #9c3d1e;
+    --sage: #3d5c4a;
+    --muted: #7a6f62;
+    --line: #d4ccc0;
+    --card-bg: #faf7f2;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--paper); color: var(--ink);
+    min-height: 100vh; overflow-x: hidden;
+  }
+  body::before {
+    content: ''; position: fixed; inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none; z-index: 1000; opacity: 0.6;
+  }
+
+  /* HEADER */
+  header {
+    border-bottom: 2px solid var(--ink); padding: 18px 40px;
+    display: flex; align-items: center; gap: 20px;
+    background: var(--paper); position: sticky; top: 0; z-index: 100;
+  }
+  .header-eyebrow { font-family:'DM Mono',monospace; font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:var(--amber); }
+  .header-title { font-family:'Playfair Display',serif; font-size:20px; font-weight:700; flex:1; }
+  .progress-track { display:flex; align-items:center; gap:5px; }
+  .progress-dot { width:7px; height:7px; border-radius:50%; background:var(--line); transition:all .3s; cursor:pointer; }
+  .progress-dot.done { background:var(--sage); }
+  .progress-dot.active { background:var(--amber); transform:scale(1.5); }
+
+  /* MAIN */
+  main { max-width:760px; margin:0 auto; padding:44px 32px 120px; }
+
+  /* WELCOME */
+  #welcome-screen { text-align:center; padding:56px 0; animation:fadeUp .5s ease; }
+  #welcome-screen h1 { font-family:'Playfair Display',serif; font-size:42px; font-weight:700; line-height:1.2; margin-bottom:16px; }
+  #welcome-screen p { font-size:15px; color:var(--muted); max-width:480px; margin:0 auto 12px; line-height:1.7; }
+  .welcome-eyebrow { font-family:'DM Mono',monospace; font-size:11px; letter-spacing:.16em; color:var(--amber); text-transform:uppercase; margin-bottom:32px; display:block; }
+  .welcome-ornament { font-size:44px; display:block; margin-bottom:20px; opacity:.45; }
+  .feature-pills { display:flex; justify-content:center; gap:10px; flex-wrap:wrap; margin-bottom:40px; }
+  .pill { background:var(--cream); border:1px solid var(--line); padding:7px 16px; border-radius:24px; font-size:12px; color:var(--muted); font-family:'DM Mono',monospace; letter-spacing:.06em; }
+
+  /* DIM TABS */
+  .dim-tabs { display:flex; border:1.5px solid var(--line); border-radius:3px; overflow:hidden; margin-bottom:32px; }
+  .dim-tab { flex:1; font-family:'DM Mono',monospace; font-size:10px; letter-spacing:.1em; text-transform:uppercase; padding:9px 4px; border:none; background:var(--cream); color:var(--muted); border-right:1px solid var(--line); transition:all .3s; text-align:center; }
+  .dim-tab:last-child { border-right:none; }
+  .dim-tab.done { background:var(--sage); color:white; }
+  .dim-tab.active { background:var(--amber); color:white; }
+
+  /* DEPTH TRACKER */
+  .depth-tracker { background:var(--cream); border:1.5px solid var(--line); border-radius:3px; padding:14px 18px; margin-bottom:28px; display:none; }
+  .depth-tracker.visible { display:block; }
+  .depth-title { font-family:'DM Mono',monospace; font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:var(--amber); margin-bottom:10px; }
+  .depth-bars { display:flex; flex-direction:column; gap:7px; }
+  .depth-bar-row { display:flex; align-items:center; gap:10px; }
+  .depth-bar-label { font-family:'DM Mono',monospace; font-size:10px; color:var(--muted); letter-spacing:.08em; width:62px; text-transform:uppercase; flex-shrink:0; }
+  .depth-bar-track { flex:1; height:5px; background:var(--line); border-radius:3px; overflow:hidden; }
+  .depth-bar-fill { height:100%; background:var(--sage); border-radius:3px; transition:width .5s ease; width:0%; }
+  .depth-bar-pct { font-family:'DM Mono',monospace; font-size:10px; color:var(--muted); width:28px; text-align:right; }
+
+  /* QUESTION */
+  .question-block { display:none; animation:fadeUp .35s ease; }
+  .question-block.active { display:block; }
+  @keyframes fadeUp { from{opacity:0;transform:translateY(18px)} to{opacity:1;transform:translateY(0)} }
+
+  .phase-label { font-family:'DM Mono',monospace; font-size:10px; letter-spacing:.2em; text-transform:uppercase; color:var(--amber); margin-bottom:10px; display:flex; align-items:center; gap:10px; }
+  .phase-label::after { content:''; flex:1; height:1px; background:var(--line); }
+  .question-number { font-family:'Playfair Display',serif; font-size:64px; font-weight:700; color:var(--line); line-height:1; margin-bottom:-10px; user-select:none; }
+  .question-text { font-family:'Playfair Display',serif; font-size:26px; font-weight:400; line-height:1.35; margin-bottom:8px; max-width:620px; }
+  .question-hint { font-size:13px; color:var(--muted); line-height:1.6; margin-bottom:22px; font-style:italic; max-width:540px; }
+
+  /* TEXTAREA */
+  .answer-area { width:100%; min-height:130px; background:var(--card-bg); border:1.5px solid var(--line); border-radius:3px; padding:16px 18px; font-family:'DM Sans',sans-serif; font-size:15px; line-height:1.65; color:var(--ink); resize:vertical; outline:none; transition:border-color .2s,box-shadow .2s; }
+  .answer-area:focus { border-color:var(--amber); box-shadow:0 0 0 3px rgba(200,134,10,.08); }
+  .answer-area::placeholder { color:#b0a898; font-style:italic; }
+
+  /* ANALYSE ROW */
+  .analyse-row { display:flex; justify-content:flex-end; margin-top:10px; margin-bottom:4px; }
+  .btn-analyse { font-family:'DM Mono',monospace; font-size:10px; letter-spacing:.12em; text-transform:uppercase; background:var(--ink); color:var(--paper); border:none; padding:10px 22px; cursor:pointer; border-radius:2px; display:flex; align-items:center; gap:8px; transition:background .2s; }
+  .btn-analyse:hover { background:#3a3028; }
+  .btn-analyse:disabled { background:var(--muted); cursor:not-allowed; }
+
+  /* FEEDBACK PANEL */
+  .feedback-panel { margin-top:16px; border-radius:4px; overflow:hidden; border:1.5px solid #8bbfa0; background:#f0f7f2; animation:fadeUp .3s ease; display:none; }
+  .feedback-panel.warn { border-color:#e6a020; background:#fff3e0; }
+  .feedback-header { display:flex; align-items:center; gap:10px; padding:10px 16px; border-bottom:1px solid rgba(0,0,0,.07); background:rgba(0,0,0,.03); }
+  .feedback-badge { font-family:'DM Mono',monospace; font-size:9px; letter-spacing:.14em; text-transform:uppercase; padding:3px 9px; border-radius:12px; background:var(--sage); color:white; }
+  .feedback-badge.warn { background:var(--amber); }
+  .feedback-score { font-family:'DM Mono',monospace; font-size:11px; color:var(--muted); margin-left:auto; }
+  .feedback-body { padding:14px 16px; }
+  .feedback-body p { font-size:13.5px; line-height:1.65; color:var(--ink); margin-bottom:10px; }
+  .feedback-body p:last-child { margin-bottom:0; }
+  .directive-preview { background:rgba(61,92,74,.08); border-left:3px solid var(--sage); padding:10px 14px; border-radius:0 3px 3px 0; font-family:'DM Mono',monospace; font-size:12px; line-height:1.6; color:var(--sage); margin-top:10px; }
+  .directive-preview.warn { background:rgba(200,134,10,.08); border-color:var(--amber); color:#7a5200; }
+  .directive-label { font-size:10px; letter-spacing:.1em; text-transform:uppercase; opacity:.6; display:block; margin-bottom:4px; font-weight:500; }
+  .suggestion-box { margin-top:12px; font-size:13px; color:var(--muted); }
+  .suggestion-box strong { color:var(--amber); }
+  .feedback-loading { display:flex; align-items:center; gap:12px; padding:18px 16px; font-size:13px; color:var(--muted); font-style:italic; }
+
+  /* SPINNER */
+  .spinner { width:16px; height:16px; border:2px solid var(--line); border-top-color:var(--amber); border-radius:50%; animation:spin .8s linear infinite; flex-shrink:0; }
+  .spinner.sm { width:12px; height:12px; border-width:1.5px; }
+  @keyframes spin { to{transform:rotate(360deg)} }
+
+  /* NAV */
+  .nav-row { display:flex; justify-content:space-between; align-items:center; margin-top:20px; }
+
+  /* BUTTONS */
+  .btn { font-family:'DM Mono',monospace; font-size:10px; letter-spacing:.12em; text-transform:uppercase; border:1.5px solid var(--ink); background:transparent; padding:11px 26px; cursor:pointer; transition:all .2s; border-radius:2px; }
+  .btn:hover { background:var(--ink); color:var(--paper); }
+  .btn-primary { background:var(--amber); color:white; border-color:var(--amber); }
+  .btn-primary:hover { background:#a06d08; border-color:#a06d08; }
+  .btn-ghost { border-color:var(--line); color:var(--muted); }
+  .btn-ghost:hover { background:var(--cream); color:var(--ink); border-color:var(--muted); }
+
+  /* COMPLETION */
+  #completion-screen { display:none; animation:fadeUp .5s ease; }
+  .completion-banner { background:var(--ink); color:var(--paper); padding:32px 40px; border-radius:4px; margin-bottom:32px; position:relative; overflow:hidden; }
+  .completion-banner::after { content:'✦'; position:absolute; right:36px; top:50%; transform:translateY(-50%); font-size:72px; opacity:.05; color:var(--amber-light); }
+  .completion-banner h2 { font-family:'Playfair Display',serif; font-size:28px; margin-bottom:8px; }
+  .completion-banner p { font-size:13.5px; color:#b0a898; max-width:460px; line-height:1.65; }
+
+  #skills-output { background:var(--card-bg); border:1.5px solid var(--line); border-radius:4px; overflow:hidden; margin-bottom:24px; }
+  .output-toolbar { display:flex; align-items:center; justify-content:space-between; padding:12px 18px; border-bottom:1.5px solid var(--line); background:var(--cream); }
+  .output-toolbar span { font-family:'DM Mono',monospace; font-size:10px; letter-spacing:.12em; color:var(--muted); text-transform:uppercase; }
+  #copy-btn { font-family:'DM Mono',monospace; font-size:10px; letter-spacing:.1em; text-transform:uppercase; background:var(--amber); color:white; border:none; padding:7px 14px; cursor:pointer; border-radius:2px; transition:background .2s; }
+  #copy-btn:hover { background:#a06d08; }
+  #copy-btn.copied { background:var(--sage); }
+  #skills-file-content { padding:24px 28px; font-family:'DM Mono',monospace; font-size:12px; line-height:1.9; color:var(--ink); white-space:pre-wrap; word-break:break-word; max-height:520px; overflow-y:auto; }
+  #skills-file-content::-webkit-scrollbar { width:5px; }
+  #skills-file-content::-webkit-scrollbar-track { background:var(--cream); }
+  #skills-file-content::-webkit-scrollbar-thumb { background:var(--line); border-radius:3px; }
+  .file-h { color:var(--rust); font-weight:500; }
+  .file-bullet { color:var(--sage); }
+  .file-dim { color:var(--muted); }
+
+  @media(max-width:580px) {
+    header { padding:14px 18px; flex-wrap:wrap; }
+    main { padding:28px 18px 100px; }
+    .question-text { font-size:21px; }
+    .question-number { font-size:50px; }
+    #welcome-screen h1 { font-size:30px; }
+    .dim-tab { font-size:9px; padding:8px 2px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="header-eyebrow">Personal Skills Builder</div>
+    <div class="header-title">My Operating Style</div>
+  </div>
+  <div class="progress-track" id="progress-track"></div>
+</header>
+
+<main>
+
+  <!-- WELCOME -->
+  <div id="welcome-screen">
+    <span class="welcome-ornament">✦</span>
+    <h1>Build your personal skills file</h1>
+    <span class="welcome-eyebrow">15 questions · 5 dimensions · live AI feedback</span>
+    <p>Answer a series of reflective interview questions. After each answer, Claude analyses it in real time — telling you what pattern is emerging, what a resulting directive might look like, and how to deepen a thin response.</p>
+    <p style="margin-bottom:36px">Be honest, not aspirational. Real behaviour shapes better directives than the behaviour you wish you had.</p>
+    <div class="feature-pills">
+      <span class="pill">🧠 Thinking</span>
+      <span class="pill">✍️ Writing</span>
+      <span class="pill">⚖️ Deciding</span>
+      <span class="pill">⚡ Acting</span>
+      <span class="pill">📚 Learning</span>
+    </div>
+    <button class="btn btn-primary" onclick="startInterview()" style="font-size:11px;padding:15px 40px;letter-spacing:.15em">Begin the Interview →</button>
+  </div>
+
+  <!-- INTERVIEW -->
+  <div id="interview-screen" style="display:none">
+    <div class="depth-tracker" id="depth-tracker">
+      <div class="depth-title">Answer depth by dimension</div>
+      <div class="depth-bars" id="depth-bars"></div>
+    </div>
+    <div class="dim-tabs" id="dim-tabs"></div>
+    <div id="questions-container"></div>
+  </div>
+
+  <!-- COMPLETION -->
+  <div id="completion-screen">
+    <div class="completion-banner">
+      <h2>Your skills file is ready.</h2>
+      <p>Claude has synthesised your answers and their feedback into a personalised operating manual. Copy it into a Claude Project as a custom instruction.</p>
+    </div>
+    <div id="skills-output">
+      <div class="output-toolbar">
+        <span>SKILL.md — personal-operating-style</span>
+        <button id="copy-btn" onclick="copyFile()">Copy File</button>
+      </div>
+      <div id="skills-file-content">
+        <div class="feedback-loading"><div class="spinner"></div>Synthesising your skills file…</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap">
+      <button class="btn btn-ghost" onclick="restart()">Start Over</button>
+      <button class="btn" onclick="downloadFile()">Download .md</button>
+    </div>
+  </div>
+
+</main>
+
+<script>
+const DIMENSIONS = [
+  {id:'thinking',label:'Thinking'},
+  {id:'writing', label:'Writing'},
+  {id:'deciding',label:'Deciding'},
+  {id:'acting',  label:'Acting'},
+  {id:'learning',label:'Learning'},
+];
+
+const QUESTIONS = [
+  {dim:'thinking',phase:'How You Think',
+   q:'What are the three questions you ask most often when facing a hard problem?',
+   hint:'Think of your instinctive moves — the questions that surface before you consciously decide to ask them.',
+   placeholder:'e.g. "What is the real constraint here?" / "What would make this fail?" / "Whose interests am I missing?"'},
+  {dim:'thinking',phase:'How You Think',
+   q:'What kinds of evidence genuinely change your mind — and what tends to leave you unmoved?',
+   hint:'Be honest about what actually persuades you, not what should persuade you.',
+   placeholder:'e.g. Concrete worked examples shift me faster than abstract logic. Single anecdotes leave me sceptical...'},
+  {dim:'thinking',phase:'How You Think',
+   q:'Where do you tend to overthink, and where do you move too fast?',
+   hint:'Naming your cognitive failure modes lets an AI partner flag them before they cost you.',
+   placeholder:'e.g. I overanalyse when stakes feel high but underinvest in planning for repeating tasks...'},
+  {dim:'writing',phase:'How You Write',
+   q:'Describe your ideal writing tone and structure in a short paragraph.',
+   hint:'Think of the pieces of writing you\'re most proud of. What do they share?',
+   placeholder:'e.g. Direct and executive. Lead with the point. Short paragraphs. Tables to compare; prose for judgment...'},
+  {dim:'writing',phase:'How You Write',
+   q:'What phrasing, patterns, or words do you consistently cut when editing?',
+   hint:'Anti-patterns reveal your voice more precisely than any positive description.',
+   placeholder:'e.g. Passive voice. Qualifiers like "somewhat". Opening sentences that restate the question...'},
+  {dim:'writing',phase:'How You Write',
+   q:'Who is your typical reader, and what do they need to walk away knowing or deciding?',
+   hint:'Audience clarity is the most underrated writing skill.',
+   placeholder:'e.g. Senior stakeholders with limited time. They need confidence to approve, or a reason to pause...'},
+  {dim:'deciding',phase:'How You Decide',
+   q:'Walk me through the last consequential decision you made well. What made the process work?',
+   hint:'Focus on the process, not just the outcome. A good outcome from a poor process is still a poor process.',
+   placeholder:'e.g. I wrote down criteria before looking at options. I named the key uncertainty and tested it cheaply first...'},
+  {dim:'deciding',phase:'How You Decide',
+   q:'How do you handle high uncertainty — what is your threshold for action versus more research?',
+   hint:'Think about when you had to commit without full information. What made you act, or wait?',
+   placeholder:'e.g. If reversible, I bias toward action with a review date. If not reversible, I pressure-test the key assumption...'},
+  {dim:'deciding',phase:'How You Decide',
+   q:'What risks do you tend to underestimate — and which do you overestimate?',
+   hint:'Most decision-makers have a consistent bias direction. Knowing yours lets you correct for it.',
+   placeholder:'e.g. I underestimate implementation drag. I overestimate how much a plan stays intact after reality...'},
+  {dim:'acting',phase:'How You Act',
+   q:'What kind of plan gets you into action — and what kind stalls or overwhelms you?',
+   hint:'There is a difference between a plan that helps you act and one that makes you feel productive without doing anything.',
+   placeholder:'e.g. Three named next actions with owners gets me moving. A long task list makes me avoid starting...'},
+  {dim:'acting',phase:'How You Act',
+   q:'Where do you most commonly lose momentum on projects — and what has helped you recover it?',
+   hint:'Common bottlenecks: unclear next step, waiting on others, decision fatigue, perfectionism.',
+   placeholder:'e.g. I stall when a task depends on someone else and I haven\'t made the ask explicit...'},
+  {dim:'acting',phase:'How You Act',
+   q:'How do you like to end planning sessions — what output signals "ready to act"?',
+   hint:'For some it\'s a written next step. For others a deadline. For others a definition of done.',
+   placeholder:'e.g. I need one concrete action, a deadline, and a named person responsible — including myself...'},
+  {dim:'learning',phase:'How You Learn',
+   q:'What feedback has genuinely changed the way you work — and what made it land?',
+   hint:'Think of a specific piece of feedback that shifted something durable in how you operate.',
+   placeholder:'e.g. A manager showed me my first drafts were ideas, not arguments. That one reframe stuck permanently...'},
+  {dim:'learning',phase:'How You Learn',
+   q:'How do you best absorb new ideas — reading, example, debate, doing, or something else?',
+   hint:'Some people need to teach to learn. Others need a worked example. Others need to argue with the idea first.',
+   placeholder:'e.g. I need a concrete example before the abstraction makes sense, then apply it within a week...'},
+  {dim:'learning',phase:'How You Learn',
+   q:'What is something you keep having to relearn — a lesson that hasn\'t yet stuck?',
+   hint:'The answer often points directly to a useful anti-pattern to encode.',
+   placeholder:'e.g. I keep underestimating how long stakeholder alignment takes, every project, every quarter...'},
+];
+
+let current = 0;
+let answers   = new Array(QUESTIONS.length).fill('');
+let feedbacks = new Array(QUESTIONS.length).fill(null);
+let depthScores = new Array(QUESTIONS.length).fill(0);
+let fileContent = '';
+
+// ── INIT ──────────────────────────────────────
+
+function startInterview() {
+  document.getElementById('welcome-screen').style.display = 'none';
+  document.getElementById('interview-screen').style.display = 'block';
+  buildProgressDots();
+  buildDimTabs();
+  buildDepthBars();
+  buildQuestions();
+  updateUI();
+  setTimeout(() => document.getElementById('ans-0')?.focus(), 100);
+}
+
+function buildProgressDots() {
+  const track = document.getElementById('progress-track');
+  track.innerHTML = '';
+  QUESTIONS.forEach((_, i) => {
+    const d = document.createElement('div');
+    d.className = 'progress-dot';
+    d.title = `Q${i+1}`;
+    d.onclick = () => jumpTo(i);
+    track.appendChild(d);
+  });
+}
+
+function buildDimTabs() {
+  const tabs = document.getElementById('dim-tabs');
+  tabs.innerHTML = '';
+  DIMENSIONS.forEach(dim => {
+    const t = document.createElement('div');
+    t.className = 'dim-tab'; t.id = `tab-${dim.id}`;
+    t.textContent = dim.label;
+    tabs.appendChild(t);
+  });
+}
+
+function buildDepthBars() {
+  const container = document.getElementById('depth-bars');
+  container.innerHTML = '';
+  DIMENSIONS.forEach(dim => {
+    container.innerHTML += `
+      <div class="depth-bar-row">
+        <span class="depth-bar-label">${dim.label}</span>
+        <div class="depth-bar-track"><div class="depth-bar-fill" id="bar-${dim.id}"></div></div>
+        <span class="depth-bar-pct" id="pct-${dim.id}">—</span>
+      </div>`;
+  });
+}
+
+function buildQuestions() {
+  const container = document.getElementById('questions-container');
+  container.innerHTML = '';
+  QUESTIONS.forEach((q, i) => {
+    const block = document.createElement('div');
+    block.className = 'question-block' + (i === 0 ? ' active' : '');
+    block.id = `q-${i}`;
+    block.innerHTML = `
+      <div class="phase-label">${q.phase}</div>
+      <div class="question-number">${String(i+1).padStart(2,'0')}</div>
+      <div class="question-text">${q.q}</div>
+      <div class="question-hint">${q.hint}</div>
+      <textarea class="answer-area" id="ans-${i}" placeholder="${q.placeholder}" rows="5"
+        oninput="onInput(${i})">${answers[i]}</textarea>
+      <div class="analyse-row">
+        <button class="btn-analyse" id="abtn-${i}" onclick="analyseAnswer(${i})" disabled>
+          <span id="abtn-label-${i}">Analyse answer</span>
+        </button>
+      </div>
+      <div class="feedback-panel" id="fp-${i}"></div>
+      <div class="nav-row">
+        ${i > 0 ? `<button class="btn btn-ghost" onclick="navigate(-1)">← Back</button>` : `<span></span>`}
+        <button class="btn btn-primary" onclick="navigate(1)">
+          ${i < QUESTIONS.length-1 ? 'Next →' : 'Generate My Skills File →'}
+        </button>
+      </div>`;
+    container.appendChild(block);
+    if (feedbacks[i]) renderFeedback(i, feedbacks[i]);
+    if (answers[i].trim().length > 20) document.getElementById(`abtn-${i}`).disabled = false;
+  });
+}
+
+// ── INPUT HANDLER ─────────────────────────────
+
+function onInput(i) {
+  const ta = document.getElementById(`ans-${i}`);
+  answers[i] = ta.value;
+  document.getElementById(`abtn-${i}`).disabled = ta.value.trim().length < 20;
+}
+
+// ── ANALYSE ────────────────────────────────────
+
+async function analyseAnswer(i) {
+  const answer = answers[i] || '';
+  if (answer.trim().length < 20) return;
+
+  const btn = document.getElementById(`abtn-${i}`);
+  const lbl = document.getElementById(`abtn-label-${i}`);
+  const fp  = document.getElementById(`fp-${i}`);
+
+  btn.disabled = true;
+  lbl.innerHTML = '<span style="display:flex;align-items:center;gap:6px"><span class="spinner sm"></span>Analysing…</span>';
+  fp.style.display = 'block';
+  fp.className = 'feedback-panel';
+  fp.innerHTML = '<div class="feedback-loading"><div class="spinner"></div>Claude is reading your answer…</div>';
+
+  const q = QUESTIONS[i];
+  const systemPrompt = `You analyse interview answers for a personal skills file builder. Return ONLY a JSON object with no markdown, no code fences, no preamble.`;
+  const userPrompt = `Question (dimension: ${q.dim}): "${q.q}"
+Answer: "${answer}"
+
+Return this exact JSON:
+{
+  "quality": "strong"|"adequate"|"thin",
+  "depth_score": <integer 0-100>,
+  "assessment": "<2-3 sentences: what pattern is emerging, what is specific and useful, what is still vague>",
+  "directive_preview": "<one real imperative directive that could be written from this answer>",
+  "suggestion": "<one specific follow-up question to help them deepen the answer — only if quality is thin or adequate, else empty string>"
+}
+
+Scoring guide:
+- strong (70-100): specific, evidence-based, operational — translates directly into directives
+- adequate (35-69): some specificity but still partly generic or aspirational
+- thin (0-34): vague, too short, or aspirational without real evidence`;
+
+  try {
+    const resp = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 1000,
+        system: systemPrompt,
+        messages: [{role:"user", content: userPrompt}]
+      })
+    });
+    const data = await resp.json();
+    const raw  = (data.content || []).map(b => b.text||'').join('');
+    const clean = raw.replace(/```(?:json)?\n?/g,'').replace(/```/g,'').trim();
+    const fb = JSON.parse(clean);
+    feedbacks[i] = fb;
+    depthScores[i] = fb.depth_score || 0;
+    renderFeedback(i, fb);
+    updateDepthBars();
+  } catch(err) {
+    fp.innerHTML = `<div class="feedback-body"><p style="color:var(--rust);font-size:13px">Could not analyse — you can still continue.<br><small>${err.message}</small></p></div>`;
+  }
+
+  lbl.textContent = 'Re-analyse';
+  btn.disabled = false;
+}
+
+function renderFeedback(i, fb) {
+  const fp = document.getElementById(`fp-${i}`);
+  if (!fp || !fb) return;
+  const isWarn = fb.quality === 'thin' || fb.quality === 'adequate';
+  fp.style.display = 'block';
+  fp.className = 'feedback-panel' + (isWarn ? ' warn' : '');
+
+  const label = {strong:'Strong answer', adequate:'Can go deeper', thin:'Needs more depth'}[fb.quality] || fb.quality;
+  const score = fb.depth_score != null ? `Depth ${fb.depth_score}/100` : '';
+
+  fp.innerHTML = `
+    <div class="feedback-header">
+      <span class="feedback-badge ${isWarn?'warn':''}">${label}</span>
+      <span class="feedback-score">${score}</span>
+    </div>
+    <div class="feedback-body">
+      <p>${fb.assessment || ''}</p>
+      ${fb.directive_preview ? `
+        <div class="directive-preview ${isWarn?'warn':''}">
+          <span class="directive-label">Emerging directive</span>
+          ${fb.directive_preview}
+        </div>` : ''}
+      ${fb.suggestion && isWarn ? `
+        <p class="suggestion-box" style="margin-top:12px">
+          <strong>To strengthen this:</strong> ${fb.suggestion}
+        </p>` : ''}
+    </div>`;
+}
+
+function updateDepthBars() {
+  const tracker = document.getElementById('depth-tracker');
+  const answered = answers.filter(a => a.trim().length > 10).length;
+  if (answered >= 3) tracker.classList.add('visible');
+
+  DIMENSIONS.forEach(dim => {
+    const indices = QUESTIONS.map((q,i) => q.dim===dim.id ? i : -1).filter(i => i >= 0);
+    const scores  = indices.map(i => depthScores[i]).filter(s => s > 0);
+    if (!scores.length) return;
+    const avg = Math.round(scores.reduce((a,b) => a+b, 0) / scores.length);
+    const fill = document.getElementById(`bar-${dim.id}`);
+    const pct  = document.getElementById(`pct-${dim.id}`);
+    if (fill) fill.style.width = avg + '%';
+    if (pct)  pct.textContent  = avg + '%';
+  });
+}
+
+// ── NAVIGATION ─────────────────────────────────
+
+function saveAnswer() {
+  const ta = document.getElementById(`ans-${current}`);
+  if (ta) answers[current] = ta.value;
+}
+
+function navigate(dir) {
+  saveAnswer();
+  const next = current + dir;
+  if (next < 0) return;
+  if (next >= QUESTIONS.length) { showCompletion(); return; }
+  document.getElementById(`q-${current}`).classList.remove('active');
+  current = next;
+  document.getElementById(`q-${current}`).classList.add('active');
+  updateUI();
+  setTimeout(() => document.getElementById(`ans-${current}`)?.focus(), 80);
+}
+
+function jumpTo(i) {
+  saveAnswer();
+  document.getElementById(`q-${current}`)?.classList.remove('active');
+  current = i;
+  document.getElementById(`q-${current}`)?.classList.add('active');
+  updateUI();
+}
+
+function updateUI() {
+  document.querySelectorAll('.progress-dot').forEach((d,i) => {
+    d.className = 'progress-dot' + (i < current ? ' done' : i === current ? ' active' : '');
+  });
+  const dimId = QUESTIONS[current].dim;
+  DIMENSIONS.forEach(dim => {
+    const tab = document.getElementById(`tab-${dim.id}`);
+    if (!tab) return;
+    const indices = QUESTIONS.map((q,i) => q.dim===dim.id ? i : -1).filter(i => i >= 0);
+    const allDone = indices.every(i => i < current);
+    tab.className = 'dim-tab' + (allDone ? ' done' : dim.id===dimId ? ' active' : '');
+  });
+}
+
+// ── COMPLETION ─────────────────────────────────
+
+async function showCompletion() {
+  saveAnswer();
+  document.getElementById('interview-screen').style.display = 'none';
+  document.getElementById('completion-screen').style.display = 'block';
+  document.querySelectorAll('.progress-dot').forEach(d => d.className = 'progress-dot done');
+  await generateSkillsFile();
+}
+
+async function generateSkillsFile() {
+  const div = document.getElementById('skills-file-content');
+  div.innerHTML = '<div class="feedback-loading"><div class="spinner"></div>Synthesising your 15 answers into a skills file…</div>';
+
+  const qas = QUESTIONS.map((q,i) => {
+    const fb = feedbacks[i];
+    const note = fb ? ` [feedback: ${fb.quality}, depth: ${fb.depth_score}/100]` : '';
+    return `[${q.dim.toUpperCase()} — ${q.phase}]${note}\nQ: ${q.q}\nA: ${answers[i]||'(no answer)'}`;
+  }).join('\n\n');
+
+  const prompt = `Synthesise a personal SKILL.md from these 15 interview answers and their AI feedback scores.
+
+Rules:
+1. Write imperative directives — "Challenge weak assumptions before expanding" not "User values critical thinking."
+2. Every directive must come from what they actually said. Do not invent patterns.
+3. Where feedback marked "thin" or low depth, write fewer, more careful directives — never pad with generics.
+4. Anti-patterns must be specific to their revealed failure modes.
+5. Keep the whole file under 850 words. Density beats length.
+6. Output raw SKILL.md only — no code fences, no preamble.
+
+FORMAT:
+---
+name: personal-operating-style
+description: [one sentence on when to use this file]
+---
+
+# My Operating Style
+
+## Core Collaboration Principle
+[1 focused paragraph]
+
+## How I Think
+[5–8 bullet directives]
+
+## How I Write
+[5–8 bullet directives]
+
+## How I Decide
+[5–8 bullet directives]
+
+## How I Act
+[5–8 bullet directives]
+
+## How I Learn
+[5–8 bullet directives]
+
+## Anti-Patterns to Avoid
+[4–6 specific bullets]
+
+## Update Rules
+[3 concise rules]
+
+---
+INTERVIEW DATA:
+${qas}
+
+Write the file now.`;
+
+  try {
+    const resp = await fetch("https://api.anthropic.com/v1/messages", {
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({
+        model:"claude-sonnet-4-20250514",
+        max_tokens:1000,
+        messages:[{role:"user", content:prompt}]
+      })
+    });
+    const data = await resp.json();
+    const raw  = (data.content||[]).map(b=>b.text||'').join('');
+    fileContent = raw.replace(/```(?:markdown|md)?\n?/g,'').replace(/```$/g,'').trim();
+    renderFile(fileContent);
+  } catch(err) {
+    div.innerHTML = `<div style="color:var(--rust);padding:20px;font-family:'DM Mono',monospace;font-size:12px">Error: ${err.message}</div>`;
+  }
+}
+
+function renderFile(text) {
+  const div = document.getElementById('skills-file-content');
+  const esc = text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  div.innerHTML = esc
+    .replace(/(^#{1,3} .+$)/gm,'<span class="file-h">$1</span>')
+    .replace(/(^- .+$)/gm,'<span class="file-bullet">$1</span>')
+    .replace(/(^---$)/gm,'<span class="file-dim">$1</span>');
+}
+
+// ── COPY / DOWNLOAD ────────────────────────────
+
+function copyFile() {
+  if (!fileContent) return;
+  navigator.clipboard.writeText(fileContent).then(() => {
+    const btn = document.getElementById('copy-btn');
+    btn.textContent = 'Copied ✓'; btn.classList.add('copied');
+    setTimeout(() => { btn.textContent='Copy File'; btn.classList.remove('copied'); }, 2500);
+  });
+}
+
+function downloadFile() {
+  if (!fileContent) return;
+  const b64 = btoa(unescape(encodeURIComponent(fileContent)));
+  const a = document.createElement('a');
+  a.href = 'data:text/markdown;base64,' + b64;
+  a.download = 'personal-operating-style.md';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+
+function restart() {
+  current=0; answers=new Array(QUESTIONS.length).fill('');
+  feedbacks=new Array(QUESTIONS.length).fill(null);
+  depthScores=new Array(QUESTIONS.length).fill(0); fileContent='';
+  document.getElementById('completion-screen').style.display='none';
+  document.getElementById('welcome-screen').style.display='block';
+}
+</script>
+</body>
+</html>
